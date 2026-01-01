@@ -12,6 +12,4 @@ COPY --from=builder /root/dhcp-helper/src/dhcp-helper /dhcp-helper
 
 EXPOSE 67/udp
 
-USER 65534
-
 ENTRYPOINT ["/dhcp-helper"]
