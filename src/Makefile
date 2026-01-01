@@ -1,6 +1,6 @@
 # One-command static musl build, auto-stripped, executable
 
-CC := musl-gcc
+CC := gcc
 STRIP := strip
 CHMOD := chmod
 
