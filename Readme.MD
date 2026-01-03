@@ -56,16 +56,14 @@ unless you add the user and group to the image as well. Currently only "nobody" 
           nodeSelector:
             kubernetes.io/hostname: cube01
           dnsPolicy: ClusterFirstWithHostNet
-          # Wait 60s to be sure old dhcp-relay is gone
-          initContainers:
-            - name: wait-60s
-              image: busybox:1.36
-              command: ["sh", "-c", "sleep 60"]
           containers:
             - name: dhcp-relay
               image: ghcr.io/slyrc/dhcp-helper:latest
               imagePullPolicy: Always
+              # Wait 65s to be sure old dhcp-relay is gone and pihole is ready
               args:
+                - "-w"
+                - "65"
                 - "-n"
                 - "-i"
                 - "eth0"
