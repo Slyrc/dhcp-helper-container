@@ -286,68 +286,68 @@ Legend:
 
 ### 1) Client gets/renews a lease (DISCOVER/REQUEST)
 
-LAN Client
-  |
-  | UDP 68 --> 67
-  |   dst_ip: 255.255.255.255  (limited broadcast)
-  |   OR dst_ip: <LAN_BCAST>   (directed broadcast)
-  |   OR dst_ip: <NODE_IP>     (some renewals)
-  v
-+--------------------------------------------------------------+
-| (host) Node / eth0                                           |
-|                                                              |
-|  [tc INGRESS]                                                |
-|   match: udp src_port=68 dst_port=67                         |
-|          dst_ip in {255.255.255.255, <LAN_BCAST>, <NODE_IP>} |
-|   action: dport 67 --> 1067                                  |
-|                                                              |
-+--------------------------------------------------------------+
-  |
-  | UDP 68 --> 1067   (now targets helper’s alt server port)
-  v
-+--------------------------------------------------------------+
-| (pod) dhcp-helper (hostNetwork: true)                        |
-|   listens on UDP 1067 (alt server port)                      |
-|   relays request (sets giaddr)                               |
-|   forwards to DHCP server using alt ports too                |
-+--------------------------------------------------------------+
-  |
-  | UDP 1068 --> 1067   (forward to DHCP server in-cluster)
-  v
-+--------------------------------------------------------------+
-| (svc/pod) Pi-hole / dnsmasq DHCP (ALT PORT MODE)             |
-|   listens on UDP 1067                                        |
-|   replies from UDP 1067 --> 1068                             |
-+--------------------------------------------------------------+
+LAN Client<br />
+  |<br />
+  | UDP 68 --> 67<br />
+  |   dst_ip: 255.255.255.255  (limited broadcast)<br />
+  |   OR dst_ip: <LAN_BCAST>   (directed broadcast)<br />
+  |   OR dst_ip: <NODE_IP>     (some renewals)<br />
+  v<br />
++--------------------------------------------------------------+<br />
+| (host) Node / eth0                                           |<br />
+|                                                              |<br />
+|  [tc INGRESS]                                                |<br />
+|   match: udp src_port=68 dst_port=67                         |<br />
+|          dst_ip in {255.255.255.255, <LAN_BCAST>, <NODE_IP>} |<br />
+|   action: dport 67 --> 1067                                  |<br />
+|                                                              |<br />
++--------------------------------------------------------------+<br />
+  |<br />
+  | UDP 68 --> 1067   (now targets helper’s alt server port)<br />
+  v<br />
++--------------------------------------------------------------+<br />
+| (pod) dhcp-helper (hostNetwork: true)                        |<br />
+|   listens on UDP 1067 (alt server port)                      |<br />
+|   relays request (sets giaddr)                               |<br />
+|   forwards to DHCP server using alt ports too                |<br />
++--------------------------------------------------------------+<br />
+  |<br />
+  | UDP 1068 --> 1067   (forward to DHCP server in-cluster)<br />
+  v<br />
++--------------------------------------------------------------+<br />
+| (svc/pod) Pi-hole / dnsmasq DHCP (ALT PORT MODE)             |<br />
+|   listens on UDP 1067                                        |<br />
+|   replies from UDP 1067 --> 1068                             |<br />
++--------------------------------------------------------------+<br />
 
 ### 2) Server replies (OFFER/ACK) back to the client
 
-Pi-hole / dnsmasq
-  |
-  | UDP 1067 --> 1068   (alt ports)
-  v
-+--------------------------------------------------------------+
-| (pod) dhcp-helper (hostNetwork)                              |
-|   sends towards LAN using alt ports:                         |
-|     UDP 1067 --> 1068                                        |
-+--------------------------------------------------------------+
-  |
-  v
-+--------------------------------------------------------------+
-| (host) Node / eth0                                           |
-|                                                              |
-|  [tc EGRESS]                                                 |
-|   match: udp src_port=1067 dst_port=1068                     |
-|          src_ip=<NODE_IP>                                    |
-|          dst_ip=255.255.255.255 OR dst_ip in <LAN_CIDR>      |
-|   action: sport 1067 --> 67                                  |
-|           dport 1068 --> 68                                  |
-|                                                              |
-+--------------------------------------------------------------+
-  |
-  | UDP 67 --> 68   (back to real DHCP on the wire)
-  v
-LAN Client receives OFFER/ACK
+Pi-hole / dnsmasq<br />
+  |<br />
+  | UDP 1067 --> 1068   (alt ports)<br />
+  v<br />
++--------------------------------------------------------------+<br />
+| (pod) dhcp-helper (hostNetwork)                              |<br />
+|   sends towards LAN using alt ports:                         |<br />
+|     UDP 1067 --> 1068                                        |<br />
++--------------------------------------------------------------+<br />
+  |<br />
+  v<br />
++--------------------------------------------------------------+<br />
+| (host) Node / eth0                                           |<br />
+|                                                              |<br />
+|  [tc EGRESS]                                                 |<br />
+|   match: udp src_port=1067 dst_port=1068                     |<br />
+|          src_ip=<NODE_IP>                                    |<br />
+|          dst_ip=255.255.255.255 OR dst_ip in <LAN_CIDR>      |<br />
+|   action: sport 1067 --> 67                                  |<br />
+|           dport 1068 --> 68                                  |<br />
+|                                                              |<br />
++--------------------------------------------------------------+<br />
+  |<br />
+  | UDP 67 --> 68   (back to real DHCP on the wire)<br />
+  v<br />
+LAN Client receives OFFER/ACK<br />
 
 ---
 
