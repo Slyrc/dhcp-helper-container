@@ -78,11 +78,10 @@ unless you add the user and group to the image as well. Currently only "nobody" 
                 capabilities:
                   drop: ["ALL"]
                   add:
-                    - NET_BIND_SERVICE 
-                    - NET_RAW 
-                    - NET_ADMIN 
-                    - SETPCAP 
-                    - SETUID 
+                    - NET_BIND_SERVICE
+                    - NET_ADMIN
+                    - SETPCAP
+                    - SETUID
                     - SETGID
               resources:
                 limits:
