@@ -83,6 +83,134 @@ struct dhcp_packet_with_opts{
   unsigned char options[312];
 };
 
+#define CLIENT_STATE_MAX 1024
+
+struct client_state {
+  unsigned char chaddr[DHCP_CHADDR_MAX];
+  int hlen;
+  int last_request_had_ip;
+  struct client_state *next;
+};
+
+static struct client_state *client_states = NULL;
+static int client_state_count = 0;
+
+static struct client_state *find_client_state(const unsigned char *chaddr, int hlen)
+{
+  struct client_state *client;
+
+  for (client = client_states; client; client = client->next)
+    if (client->hlen == hlen && memcmp(client->chaddr, chaddr, hlen) == 0)
+      return client;
+
+  return NULL;
+}
+
+static struct client_state *upsert_client_state(const unsigned char *chaddr, int hlen, int had_ip, int *was_new)
+{
+  struct client_state *client = find_client_state(chaddr, hlen);
+
+  if (client)
+    {
+      if (was_new)
+	*was_new = 0;
+      client->last_request_had_ip = had_ip;
+      return client;
+    }
+
+  if (!(client = malloc(sizeof(*client))))
+    {
+      if (was_new)
+	*was_new = 0;
+      return NULL;
+    }
+
+  memset(client, 0, sizeof(*client));
+  if (hlen > DHCP_CHADDR_MAX)
+    hlen = DHCP_CHADDR_MAX;
+  client->hlen = hlen;
+  memcpy(client->chaddr, chaddr, hlen);
+  client->last_request_had_ip = had_ip;
+  client->next = client_states;
+  client_states = client;
+  client_state_count++;
+
+  if (client_state_count > CLIENT_STATE_MAX)
+    {
+      struct client_state *prev = NULL;
+      struct client_state *cur = client_states;
+
+      while (cur && cur->next)
+	{
+	  prev = cur;
+	  cur = cur->next;
+	}
+
+      if (cur)
+	{
+	  if (prev)
+	    prev->next = NULL;
+	  else
+	    client_states = NULL;
+	  free(cur);
+	  client_state_count--;
+	}
+    }
+
+  if (was_new)
+    *was_new = 1;
+
+  return client;
+}
+
+static const char *format_mac(const unsigned char *chaddr, int hlen, char *buf, size_t buflen)
+{
+  size_t pos = 0;
+  int i;
+
+  if (buflen == 0)
+    return buf;
+
+  if (hlen <= 0)
+    {
+      strncpy(buf, "unknown", buflen);
+      buf[buflen - 1] = '\0';
+      return buf;
+    }
+
+  if (hlen > DHCP_CHADDR_MAX)
+    hlen = DHCP_CHADDR_MAX;
+
+  for (i = 0; i < hlen; i++)
+    {
+      int n = snprintf(buf + pos, buflen - pos, (i == 0) ? "%02x" : ":%02x", chaddr[i]);
+      if (n < 0 || (size_t)n >= buflen - pos)
+	break;
+      pos += (size_t)n;
+    }
+
+  if (pos == 0)
+    {
+      strncpy(buf, "unknown", buflen);
+      buf[buflen - 1] = '\0';
+    }
+
+  return buf;
+}
+
+static const char *format_ip(struct in_addr addr, char *buf, size_t buflen)
+{
+  if (!inet_ntop(AF_INET, &addr, buf, buflen))
+    {
+      if (buflen > 0)
+	{
+	  strncpy(buf, "0.0.0.0", buflen);
+	  buf[buflen - 1] = '\0';
+	}
+    }
+
+  return buf;
+}
 
 int main(int argc, char **argv)
 {
@@ -522,13 +650,35 @@ int main(int argc, char **argv)
 		}
 	    
 	    /* not there, add a new entry */
-	    if (!iface && (iface = malloc(sizeof(struct interface))))
+	  if (!iface && (iface = malloc(sizeof(struct interface))))
 	      {
 		iface->next = ifaces;
 		ifaces = iface;
 		iface->addr = iface_addr;
 		iface->index = iface_index;
 	      }
+	  }
+
+	if (debug)
+	  {
+	    char macbuf[DHCP_CHADDR_MAX * 3];
+	    char ipbuf[INET_ADDRSTRLEN];
+	    struct client_state *client = find_client_state(packet->chaddr, packet->hlen);
+
+	    if (packet->ciaddr.s_addr == 0)
+	      {
+		if (!client)
+		  fprintf(stderr, "new client mac %s\n",
+			  format_mac(packet->chaddr, packet->hlen, macbuf, sizeof(macbuf)));
+	      }
+	    else
+	      {
+		fprintf(stderr, "client with ip %s and mac %s request new ip\n",
+			format_ip(packet->ciaddr, ipbuf, sizeof(ipbuf)),
+			format_mac(packet->chaddr, packet->hlen, macbuf, sizeof(macbuf)));
+	      }
+
+	    upsert_client_state(packet->chaddr, packet->hlen, packet->ciaddr.s_addr != 0, NULL);
 	  }
 	
 	/* send to all configured servers. */
@@ -566,6 +716,25 @@ int main(int argc, char **argv)
 	
 	if (!iface)
 	  continue;
+
+	if (debug)
+	  {
+	    char macbuf[DHCP_CHADDR_MAX * 3];
+	    char ipbuf[INET_ADDRSTRLEN];
+	    struct client_state *client = find_client_state(packet->chaddr, packet->hlen);
+	    struct in_addr reply_ip;
+
+	    reply_ip = packet->yiaddr.s_addr ? packet->yiaddr : packet->ciaddr;
+
+	    if (client && client->last_request_had_ip)
+	      fprintf(stderr, "client with mac %s got new ip %s\n",
+		      format_mac(packet->chaddr, packet->hlen, macbuf, sizeof(macbuf)),
+		      format_ip(reply_ip, ipbuf, sizeof(ipbuf)));
+	    else
+	      fprintf(stderr, "client with mac %s got ip %s\n",
+		      format_mac(packet->chaddr, packet->hlen, macbuf, sizeof(macbuf)),
+		      format_ip(reply_ip, ipbuf, sizeof(ipbuf)));
+	  }
             
 	if (packet->ciaddr.s_addr)
 	  saddr.sin_addr = packet->ciaddr;
