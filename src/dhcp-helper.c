@@ -97,10 +97,51 @@ int main(int argc, char **argv)
   char *runfile = PIDFILE;
   char *user = USER;
   int debug = 0, altports = 0, demonize = 1;
+  int wait_seconds = 0;
+
+  {
+    int option;
+    int saved_opterr = opterr;
+
+    opterr = 0;
+    optind = 1;
+    while ((option = getopt(argc, argv, "w:")) != -1)
+      {
+	if (option == 'w')
+	  {
+	    char *end = NULL;
+	    long parsed = strtol(optarg, &end, 10);
+
+	    if (*optarg == '\0' || *end != '\0' || parsed < 0 || parsed > INT_MAX)
+	      {
+		fprintf(stderr, "dhcp-helper: invalid wait time '%s'\n", optarg);
+		exit(1);
+	      }
+
+	    wait_seconds = (int)parsed;
+	  }
+	else if (option == '?' && optopt == 'w')
+	  {
+	    fprintf(stderr, "dhcp-helper: -w requires an argument\n");
+	    exit(1);
+	  }
+      }
+
+    opterr = saved_opterr;
+    optind = 1;
+  }
+
+  if (wait_seconds > 0)
+    {
+      unsigned int remaining = (unsigned int)wait_seconds;
+
+      while ((remaining = sleep(remaining)) > 0)
+	;
+    }
   
   while (1)
     {
-      int option = getopt(argc, argv, "b:e:i:s:u:r:dvpn");
+      int option = getopt(argc, argv, "b:e:i:s:u:r:w:dvpn");
       
       if (option == -1)
 	break;
@@ -189,6 +230,9 @@ int main(int argc, char **argv)
 	  demonize = 0;
 	  break;
 
+	case 'w':
+	  break;
+
 	case 'v':
 	  fprintf(stderr, "dhcp-helper version %s, %s\n", VERSION, COPYRIGHT);
 	  exit(0);
@@ -203,6 +247,7 @@ int main(int argc, char **argv)
 		  "-e <interface>   Do not listen for DHCP requests on <interface>\n"
 		  "-u <user>        Change to user <user> (defaults to %s)\n"
 		  "-r <file>        Write daemon PID to this file (default %s)\n"
+		  "-w <seconds>     Wait <seconds> before doing anything\n"
 		  "-p               Use alternative ports (1067/1068)\n"
 		  "-d               Debug mode\n"
 		  "-n               Do not demonize\n"

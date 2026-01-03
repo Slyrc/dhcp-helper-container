@@ -56,6 +56,9 @@ Debug mode, do not change UID, write a pid-file or go into the background.
 .B \-r <file>
 Specify an alternate path for dhcp-helper to record its process-id in. Normally /var/run/dhcp-helper.pid.
 .TP
+.B \-w <seconds>
+Wait <seconds> before doing anything.
+.TP
 .B \-u <username>
 Specify the userid to which dhcp-helper will change after startup. The daemon must normally be
 started as root, but it will drop root 
@@ -68,5 +71,4 @@ filter" and "packet socket" facilities are
 required, which is the chief advantage of this software over the ISC DHCP relay daemon.
 .SH AUTHOR
 This manual page was written by Simon Kelley <simon@thekelleys.org.uk>.
-
 
