@@ -83,7 +83,6 @@ struct dhcp_packet_with_opts{
   unsigned char options[312];
 };
 
-
 int main(int argc, char **argv)
 {
   int fd = -1, oneopt = 1, mtuopt = IP_PMTUDISC_DONT;

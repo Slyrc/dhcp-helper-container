@@ -7,7 +7,4 @@ the network stack. (No LPF or packet sockets.)
 If you use this software, please let me know; I would like some idea
 if it is generally useful to others.
 
-
 Simon Kelley  <simon@thekelleys.org.uk>
-
-
