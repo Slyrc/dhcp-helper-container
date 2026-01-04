@@ -16,7 +16,11 @@ if [ -n "${DHCP_HELPER_VERSION:-}" ] && [ "${DHCP_HELPER_VERSION}" != "UNKNOWN" 
     exit 0
 fi
 
+# This line is intended to be substituted by `git archive` when export-subst is enabled.
 subst='$Format:%d$'
+
+# Build the literal placeholder string at runtime so `git archive` does NOT substitute it here.
+placeholder='$'"Format:%d"'$'
 
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     # Determine the currently checked out local branch.
@@ -42,7 +46,7 @@ if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/n
         printf '%s\n' "${tag#v}"
     fi
 
-elif [ "$subst" = '$Format:%d$' ]; then
+elif [ "$subst" = "$placeholder" ]; then
     # Unsubstituted file (no git information embedded) and no git available
     printf '%s\n' UNKNOWN
 else
