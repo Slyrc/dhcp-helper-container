@@ -7,9 +7,14 @@ set -eu
 #   TAG_MATCH=''          # (empty) accept any tag name
 TAG_MATCH="${TAG_MATCH:-v[0-9]*}"
 
-# Optional: Strip a leading "v" from the output (cosmetic)
-# 1 = yes (default), 0 = no
-STRIP_V_PREFIX="${STRIP_V_PREFIX:-1}"
+# Prefer Docker build-arg if provided and not "UNKNOWN"
+# Dockerfile example: ARG DHCP_HELPER_VERSION=UNKNOWN
+# If DHCP_HELPER_VERSION is set (and not UNKNOWN), use it instead of git-describe flow.
+if [ -n "${DHCP_HELPER_VERSION:-}" ] && [ "${DHCP_HELPER_VERSION}" != "UNKNOWN" ]; then
+    # Always strip a leading "v" (cosmetic)
+    printf '%s\n' "${DHCP_HELPER_VERSION#v}"
+    exit 0
+fi
 
 subst='$Format:%d$'
 
@@ -33,11 +38,8 @@ if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/n
     if [ -z "${tag:-}" ]; then
         printf '%s\n' UNKNOWN
     else
-        if [ "$STRIP_V_PREFIX" = "1" ]; then
-            printf '%s\n' "${tag#v}"
-        else
-            printf '%s\n' "$tag"
-        fi
+        # Always strip a leading "v" (cosmetic)
+        printf '%s\n' "${tag#v}"
     fi
 
 elif printf '%s' "$subst" | grep -q '\$Format:%d\$'; then
@@ -51,7 +53,7 @@ else
         | grep -E '^v[0-9]' || true)"
 
     if [ -n "${vers:-}" ]; then
-        # If multiple v* tags exist, sort and pick the first; then strip leading "v"
+        # If multiple v* tags exist, sort and pick the first; then always strip leading "v"
         printf '%s\n' "$vers" | sort | head -n 1 | sed 's/^v//'
     else
         # Nothing matched; print the raw substituted string
