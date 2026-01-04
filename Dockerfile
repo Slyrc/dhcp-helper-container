@@ -12,7 +12,7 @@ RUN apk add --no-cache build-base linux-headers git && \
     else \
       GITREF="${DHCP_HELPER_VERSION}"; \
     fi && \
-    git -C /root/dhcp checkout "origin/$GITREF" && make -C /root/dhcp/src && \
+    git -C /root/dhcp checkout $GITREF && make -C /root/dhcp/src && \
     echo "nobody:x:65534:65534:nobody:/:/sbin/nologin" > /root/passwd && \
     echo "nobody:x:65534:" > /root/group
 
