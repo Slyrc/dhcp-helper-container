@@ -11,7 +11,7 @@ TAG_MATCH="${TAG_MATCH:-v[0-9]*}"
 # Dockerfile example: ARG DHCP_HELPER_VERSION=UNKNOWN
 # If DHCP_HELPER_VERSION is set (and not UNKNOWN), use it instead of git-describe flow.
 if [ -n "${DHCP_HELPER_VERSION:-}" ] && [ "${DHCP_HELPER_VERSION}" != "UNKNOWN" ]; then
-    # Always strip a leading "v" (cosmetic)
+    # Always strip a leading "v" from the output (cosmetic).
     printf '%s\n' "${DHCP_HELPER_VERSION#v}"
     exit 0
 fi
@@ -42,7 +42,7 @@ if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/n
         printf '%s\n' "${tag#v}"
     fi
 
-elif printf '%s' "$subst" | grep -q '\$Format:%d\$'; then
+elif [ "$subst" = '$Format:%d$' ]; then
     # Unsubstituted file (no git information embedded) and no git available
     printf '%s\n' UNKNOWN
 else
