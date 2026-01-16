@@ -203,6 +203,7 @@ This setup solves the classic problem:
 - DHCPv4 relies on broadcasts and privileged UDP ports 67/68.
 - In Kubernetes/CNI environments, DHCP broadcast + privileged ports can be awkward/unreliable.
 - We run dhcp-helper as a Pod with hostNetwork: true, using alternate ports 1067/1068.
+  - "-d" flag is important for rootles mode. It will skip the CAP checks so they are not loaded at all. Please check: https://github.com/Slyrc/dhcp-helper-container/blob/3a61309bec175a42a47e490fa7381c7e9a88cbc5/src/dhcp-helper.c#L387  
 - We run Pi-hole/dnsmasq DHCP in the cluster also on alternate ports 1067/1068.
   - Pi-hole/dnsmasq also needs the config: dhcp-broadcast!! -> https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
     This is they key to run the pod with - "drop all capabilities" as we skip ARP insert for normal unkown clients
