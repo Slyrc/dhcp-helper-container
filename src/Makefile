@@ -10,7 +10,7 @@ LDFLAGS := -static
 TARGET := dhcp-helper
 SRC := dhcp-helper.c
 
-VERSION := $(shell ./get-version 2>/dev/null || echo UNKNOWN)
+VERSION := $(shell ./get-version.sh 2>/dev/null || echo UNKNOWN)
 
 .PHONY: all clean
 

@@ -263,8 +263,10 @@ int main(int argc, char **argv)
     {
       unsigned int remaining = (unsigned int)wait_seconds;
 
+      fprintf(stderr, "dhcp-helper: waiting %d seconds before start\n", wait_seconds);
       while ((remaining = sleep(remaining)) > 0)
 	;
+      fprintf(stderr, "dhcp-helper: wait complete, starting dhcp-helper\n");
     }
   
   while (1)
