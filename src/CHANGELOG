@@ -1,3 +1,5 @@
+Version 1.3.1 Multi arch container for amd64 and arm64
+
 Version 1.3   Add -w flag to wait before starting actual execution
               this is helpful for deployments inside Kubernetes/Docker
               as the pod and sometimes the DHCP server itself needs some

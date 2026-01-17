@@ -23,7 +23,8 @@ Successfully pulled image "ghcr.io/slyrc/dhcp-helper:latest" in 356ms (356ms inc
 
 The end result is only: **54970 bytes!**
 
-If you use the container linked to this repo, be aware that it is only arm64! If you need a different arch clone the repo and build it yourself.
+~~If you use the container linked to this repo, be aware that it is only arm64! If you need a different arch clone the repo and build it yourself. ~~
+Since version 1.3.1 the container is now multi arch: amd64 and arm64. If needed it would be possible to build for different archs as well. (In this case please let me know)
 
 ## Important
 
